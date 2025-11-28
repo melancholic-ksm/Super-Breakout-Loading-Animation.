@@ -1,3 +1,5 @@
+![Loadingv2.0](https://raw.githubusercontent.com/melancholic-ksm/Super-Breakout-Loading-Animation./refs/heads/main/etc/v2.0.gif)
+
 # Super-Breakout-Loading-Animation.
 Cool, sleek, elegant Loading animation to famous game Super Breakout. #SuperBreakoutLoadingAnimation #CoolLoadingAnimation #simpleLOadinganimation
 
