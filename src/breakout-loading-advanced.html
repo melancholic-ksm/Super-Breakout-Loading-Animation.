@@ -1,0 +1,725 @@
+<!DOCTYPE html>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Loading...</title>
+    <link rel="icon" type="image/png" href="/7C.png">
+    <style>
+        body {
+            margin: 0;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: #f3f3eb;
+        }
+        canvas {
+            background: #f3f3eb;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="breakout" width="823" height="230"></canvas>
+    <script>
+        const canvas = document.getElementById('breakout');
+        const ctx = canvas.getContext('2d');
+
+        // Particle system for sparkles
+        let particles = [];
+        function spawnParticles(x, y, color, count, minSize = 1, maxSize = 2, minSpeed = 1, maxSpeed = 2, minLife = 18, maxLife = 32, shadow = true) {
+            for (let i = 0; i < count; i++) {
+                const angle = Math.random() * 2 * Math.PI;
+                const speed = minSpeed + Math.random() * (maxSpeed - minSpeed);
+                const size = minSize + Math.random() * (maxSize - minSize);
+                const life = minLife + Math.random() * (maxLife - minLife);
+                particles.push({
+                    x: x,
+                    y: y,
+                    dx: Math.cos(angle) * speed,
+                    dy: Math.sin(angle) * speed,
+                    size: size,
+                    color: color,
+                    life: life,
+                    maxLife: life,
+                    shadow: shadow
+                });
+            }
+        }
+        function updateAndDrawParticles() {
+            for (let i = particles.length - 1; i >= 0; i--) {
+                const p = particles[i];
+                p.x += p.dx;
+                p.y += p.dy;
+                p.life--;
+                // Fade out
+                const alpha = Math.max(0, p.life / p.maxLife);
+                ctx.save();
+                ctx.globalAlpha = alpha;
+                if (p.shadow) {
+                    ctx.shadowColor = '#444';
+                    ctx.shadowBlur = 6;
+                } else {
+                    ctx.shadowBlur = 0;
+                }
+                ctx.fillStyle = p.color;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.size, 0, 2 * Math.PI);
+                ctx.fill();
+                ctx.restore();
+                if (p.life <= 0) {
+                    particles.splice(i, 1);
+                }
+            }
+        }
+
+        // Manual mode activation logic
+        let canvasClickCount = 0;
+        function activateManualMode() {
+            manualMode = true;
+            canvasClickCount = 0;
+            // Double paddle width if not already
+            if (paddleWidth === originalPaddleWidth) {
+                paddleX = Math.max(0, Math.min(canvas.width - 86, paddleX - (86 - originalPaddleWidth) / 2));
+                paddleWidth = 86;
+            }
+        }
+
+        function deactivateManualMode() {
+            manualMode = false;
+            // Restore paddle width if needed
+            if (paddleWidth !== originalPaddleWidth) {
+                paddleX = Math.max(0, Math.min(canvas.width - originalPaddleWidth, paddleX + paddleWidth / 2 - originalPaddleWidth / 2));
+                paddleWidth = originalPaddleWidth;
+            }
+        }
+
+        canvas.addEventListener('mousedown', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            // Check if click is on paddle
+            if (x >= paddleX && x <= paddleX + paddleWidth && y >= canvas.height - paddleHeight && y <= canvas.height) {
+                activateManualMode();
+            } else {
+                canvasClickCount++;
+                if (canvasClickCount >= 3) activateManualMode();
+            }
+        });
+
+        // Track mouse x anywhere on screen
+        document.addEventListener('mousemove', (e) => {
+            mouseX = e.clientX - canvas.getBoundingClientRect().left;
+        });
+
+        // Touch events for mobile
+        canvas.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            const rect = canvas.getBoundingClientRect();
+            const touch = e.touches[0];
+            const x = touch.clientX - rect.left;
+            const y = touch.clientY - rect.top;
+            // Check if touch is on paddle
+            if (x >= paddleX && x <= paddleX + paddleWidth && y >= canvas.height - paddleHeight && y <= canvas.height) {
+                activateManualMode();
+            } else {
+                canvasClickCount++;
+                if (canvasClickCount >= 3) activateManualMode();
+            }
+        });
+
+        // Track touch x anywhere on screen
+        document.addEventListener('touchmove', (e) => {
+            if (e.touches && e.touches.length > 0) {
+                mouseX = e.touches[0].clientX - canvas.getBoundingClientRect().left;
+            }
+        }, { passive: false });
+
+        // Brick settings
+    const brickWidth = Math.round((12 * 1.25 * 1.25) / 1.25); // scale down
+    const brickHeight = Math.round(((3 * 1.25) / 1.25) * 1.12); // increase height by 1.12x
+    const brickPadding = Math.round(3 / 1.25); // scale down
+    const brickOffsetTop = Math.round(16 / 1.25);
+    const brickOffsetLeft = Math.round(8 / 1.25);
+
+        // Ball settings
+        let ballRadius = 5;
+        let x = canvas.width / 2;
+        let y = canvas.height - 30;
+    let speed = 6;
+    let angle = Math.PI * (0.25 + 0.5 * Math.random());
+    let dx = speed * Math.cos(angle);
+    let dy = -speed * Math.sin(angle);
+    let speedResetTimeout = null;
+    let speedEffect = 0; // 0: none, 0.1: +0.1, -0.1: -0.1
+    function scheduleSpeedReset(newEffect) {
+        // Only apply if effect is different
+        if (speedEffect !== newEffect) {
+            speedEffect = newEffect;
+            speed = 6 + speedEffect;
+            // Recalculate dx/dy to preserve direction
+            let angleNow = Math.atan2(dy, dx);
+            const prevDxSign = Math.sign(dx) || 1;
+            const prevDySign = Math.sign(dy) || -1;
+            dx = speed * Math.cos(angleNow) * prevDxSign;
+            dy = speed * Math.sin(angleNow) * prevDySign;
+        }
+        // Always reset timer
+        if (speedResetTimeout) clearTimeout(speedResetTimeout);
+        const delay = 1000 + Math.random() * 3000; // 1-4 seconds
+        speedResetTimeout = setTimeout(() => {
+            speedEffect = 0;
+            speed = 6;
+            let angleNow = Math.atan2(dy, dx);
+            const prevDxSign = Math.sign(dx) || 1;
+            const prevDySign = Math.sign(dy) || -1;
+            dx = speed * Math.cos(angleNow) * prevDxSign;
+            dy = speed * Math.sin(angleNow) * prevDySign;
+        }, delay);
+    }
+
+        // Paddle settings
+    const paddleHeight = 8;
+    let paddleWidth = 40;
+    const originalPaddleWidth = 40;
+    let paddleX = (canvas.width - paddleWidth) / 2;
+    let paddleSpeed = 5.6;
+    const paddleSpeedNormal = 5.6;
+    const paddleSpeedBoost = 13; // Boosted speed
+    let paddleBoostActive = false;
+        let paddleMode = 'random'; // 'random' or 'track'
+        let randomMoveTimer = 0;
+        let randomMoveDuration = 0;
+        let randomMoveDirection = 1;
+        let randomMoveDistance = 0;
+        let oscillatePhase = 0;
+        let oscillateRange = paddleWidth / 2;
+        let oscillateOffset = 0;
+        let overshootDir = 1;
+        let overshootUturn = false;
+        let lastLandingX = null;
+    let manualMode = false; // New: manual control mode
+    let mouseX = 0; // Track mouse position
+    let manualPaddleTargetX = null; // For smooth animation
+    let isFirstFall = true;
+
+        // Anti-stuck logic
+        let nonBrickHitCount = 0;
+        let consecutiveNoTargetBounces = 0;
+        let lastHitWasBrick = false;
+
+        // Bricks array
+        // Use ASCII art to define the brick pattern
+    const BRICK_ART = [
+    `__              ______        ______      ________        ______      __      __      ________`,
+    `__            __      __    __      __    __      __        __        ____    __    __        `,
+    `__            __      __    __      __    __      __        __        ____    __    __        `,
+    `__            __      __    __      __    __      __        __        __  __  __    __        `,
+    `__            __      __    __      __    __      __        __        __  __  __    __        `,
+    `__            __      __    __________    __      __        __        __    ____    __  ______`,
+    `__            __      __    __      __    __      __        __        __      __    __      __`,
+    `__            __      __    __      __    __      __        __        __      __    __      __`,
+    `__            __      __    __      __    __      __        __        __      __    __      __`,
+    `__            __      __    __      __    __      __        __        __      __    __      __`,
+    `__________      ______      __      __    ________        ______      __      __      ________`,
+    `__________      ______      __      __    ________        ______      __      __      ________`,
+];
+
+        // Parse ASCII art in steps of 2 chars per column
+        const brickRowCountArt = BRICK_ART.length;
+        const brickColumnCountArt = Math.floor(BRICK_ART[0].length / 2);
+
+        // Brick state and reset logic
+        let bricks = [];
+        function resetBricks() {
+            bricks = [];
+            for (let c = 0; c < brickColumnCountArt; c++) {
+                bricks[c] = [];
+                for (let r = 0; r < brickRowCountArt; r++) {
+                    bricks[c][r] = { x: 0, y: 0, status: 0 };
+                }
+            }
+            for (let r = 0; r < brickRowCountArt; r++) {
+                for (let c = 0; c < brickColumnCountArt; c++) {
+                    const pair = BRICK_ART[r].substr(c * 2, 2);
+                    if (pair === '__') {
+                        bricks[c][r].status = 1;
+                    }
+                }
+            }
+        }
+        resetBricks();
+
+        // Helper: get Y position of the lowest remaining brick row
+        function getLowestBrickY() {
+            let lowestY = null;
+            for (let c = 0; c < bricks.length; c++) {
+                for (let r = 0; r < bricks[c].length; r++) {
+                    if (bricks[c][r].status === 1) {
+                        let y = bricks[c][r].y + brickHeight;
+                        if (lowestY === null || y > lowestY) lowestY = y;
+                    }
+                }
+            }
+            return lowestY;
+        }
+
+        // Helper: detect if ball just passed below last brick row (from above, moving down)
+        let lastBallAboveBricks = true;
+        let ballCrossedGreenLine = false;
+        function checkBallPassedBricks() {
+            const lowestBrickY = getLowestBrickY();
+            if (lowestBrickY === null) {
+                // No bricks left, never trigger
+                lastBallAboveBricks = true;
+                ballCrossedGreenLine = false;
+                return false;
+            }
+            
+            const greenLineY = lowestBrickY + 2; // Same as green line position
+            
+            // Ball is above green line
+            if (y - ballRadius <= greenLineY) {
+                lastBallAboveBricks = true;
+                ballCrossedGreenLine = false;
+                return false;
+            }
+            
+            // Ball just crossed green line from above, moving down
+            if (lastBallAboveBricks && dy > 0 && y - ballRadius > greenLineY && !ballCrossedGreenLine) {
+                lastBallAboveBricks = false;
+                ballCrossedGreenLine = true;
+                return true;
+            }
+            
+            return false;
+        }
+
+        function drawBall() {
+            ctx.beginPath();
+            ctx.arc(x, y, ballRadius, 0, Math.PI * 2);
+            ctx.fillStyle = "#0d0d19";
+            ctx.fill();
+            ctx.closePath();
+        }
+
+        function drawPaddle() {
+            ctx.save();
+            // If in manual mode and paddle is 86px, draw only center 70px
+            if (manualMode && paddleWidth === 86) {
+                // Draw transparent sides (do nothing, just skip)
+                // Draw visible center
+                ctx.fillStyle = "#0d0d19";
+                ctx.fillRect(paddleX + 8, canvas.height - paddleHeight, 70, paddleHeight);
+            } else {
+                // Normal paddle
+                ctx.fillStyle = "#0d0d19";
+                ctx.fillRect(paddleX, canvas.height - paddleHeight, paddleWidth, paddleHeight);
+            }
+            ctx.restore();
+        }
+
+        function drawBricks() {
+            for (let c = 0; c < bricks.length; c++) {
+                for (let r = 0; r < bricks[c].length; r++) {
+                    if (bricks[c][r].status === 1) {
+                        let totalWidth = bricks.length * (brickWidth + brickPadding) - brickPadding;
+                        let totalHeight = bricks[0].length * (brickHeight + brickPadding) - brickPadding;
+                        // Center the art in the canvas
+                        let offsetX = (canvas.width - totalWidth) / 2;
+                        let offsetY = brickOffsetTop;
+                        let brickX = (c * (brickWidth + brickPadding)) + offsetX;
+                        let brickY = (r * (brickHeight + brickPadding)) + offsetY;
+                        bricks[c][r].x = brickX;
+                        bricks[c][r].y = brickY;
+                        ctx.beginPath();
+                        ctx.rect(brickX, brickY, brickWidth, brickHeight);
+                        ctx.fillStyle = "#0d0d19";
+                        ctx.fill();
+                        ctx.closePath();
+                    }
+                }
+            }
+        }
+
+        function collisionDetection() {
+            let hitBrick = false;
+            for (let c = 0; c < bricks.length; c++) {
+                for (let r = 0; r < bricks[c].length; r++) {
+                    let b = bricks[c][r];
+                    if (b.status === 1) {
+                        if (
+                            x + ballRadius > b.x &&
+                            x - ballRadius < b.x + brickWidth &&
+                            y + ballRadius > b.y &&
+                            y - ballRadius < b.y + brickHeight
+                        ) {
+                            let hitPos = (x - (b.x + brickWidth / 2)) / (brickWidth / 2);
+                            angle = Math.atan2(dy, dx) - hitPos * 0.3;
+                            // preserve direction
+                            const prevDxSign = Math.sign(dx);
+                            const prevDySign = Math.sign(dy);
+                            dx = speed * Math.cos(angle) * prevDxSign;
+                            dy = -Math.abs(speed * Math.sin(angle)) * prevDySign;
+                            b.status = 0;
+                            hitBrick = true;
+                            // Sparkle effect on brick break
+                            spawnParticles(
+                                b.x + brickWidth / 2,
+                                b.y + brickHeight / 2,
+                                '#0d0d19', // match brick color
+                                12 + Math.floor(Math.random() * 4), // 12-15 particles (reduced)
+                                1, 1.7, 1, 2, 14, 26, true
+                            );
+                            // Only apply -0.1 effect if not already active
+                            scheduleSpeedReset(-0.1);
+                        }
+                    }
+                }
+            }
+            if (hitBrick) {
+                nonBrickHitCount = 0;
+                consecutiveNoTargetBounces = 0;
+                lastHitWasBrick = true;
+            } else {
+                lastHitWasBrick = false;
+            }
+        }
+
+        function predictBallLandingX() {
+            let tx = x, ty = y, tdx = dx, tdy = dy;
+            let steps = 0;
+            const maxSteps = 1000; // Prevent infinite loops
+            
+            while (tdy > 0 && ty < canvas.height - paddleHeight - ballRadius && steps < maxSteps) {
+                tx += tdx;
+                ty += tdy;
+                steps++;
+                
+                // Handle wall bounces
+                if (tx + ballRadius > canvas.width || tx - ballRadius < 0) {
+                    tdx = -tdx;
+                }
+                // Handle ceiling bounce
+                if (ty - ballRadius < 0) {
+                    tdy = -tdy;
+                }
+            }
+            
+            // Return paddle position that centers the ball
+            return Math.max(0, Math.min(canvas.width - paddleWidth, tx - paddleWidth / 2));
+        }
+        
+        function calculateRequiredPaddleSpeed(targetX, timeFrames) {
+            const currentPaddleCenter = paddleX + paddleWidth / 2;
+            const targetPaddleCenter = targetX + paddleWidth / 2;
+            const distance = Math.abs(targetPaddleCenter - currentPaddleCenter);
+            
+            if (timeFrames <= 0) return paddleSpeedBoost; // Emergency boost
+            
+            // We want to arrive 0.06 seconds (4 frames at 60fps) before ball lands
+            const earlyArrivalFrames = 4; // 0.06 seconds at 60fps
+            const adjustedTimeFrames = Math.max(1, timeFrames - earlyArrivalFrames);
+            
+            const requiredSpeed = distance / adjustedTimeFrames;
+            
+            // Add 20% safety margin for aggressive movement
+            return Math.min(paddleSpeedBoost * 1.5, requiredSpeed * 1.2);
+        }
+
+        function updatePaddle() {
+            if (manualMode) {
+                // Smoothly animate paddle toward mouseX
+                let targetX = Math.max(0, Math.min(canvas.width - paddleWidth, mouseX - paddleWidth / 2));
+                if (manualPaddleTargetX === null) manualPaddleTargetX = paddleX;
+                // Smooth step
+                manualPaddleTargetX += (targetX - manualPaddleTargetX) * 0.25;
+                // Snap if very close
+                if (Math.abs(manualPaddleTargetX - targetX) < 0.5) manualPaddleTargetX = targetX;
+                paddleX = manualPaddleTargetX;
+                paddleSpeed = paddleSpeedNormal; // Reset to normal in manual mode
+                paddleBoostActive = false;
+                return; // Skip automatic logic
+            } else {
+                manualPaddleTargetX = null;
+            }
+
+            const lowestBrickY = getLowestBrickY();
+            
+            // --- Aggressive Paddle Speed Boost Logic ---
+            // Trigger immediately when ball crosses green line from above
+            if (lowestBrickY !== null && checkBallPassedBricks()) {
+                // Predict where ball will land with high precision
+                let landingX = predictBallLandingX();
+                // Calculate exact time until ball reaches paddle level
+                let framesToLand = (canvas.height - paddleHeight - y) / Math.abs(dy);
+                // Calculate required speed to reach target 0.06 seconds early
+                let requiredSpeed = calculateRequiredPaddleSpeed(landingX, framesToLand);
+                // Only boost if required speed is greater than normal
+                if (requiredSpeed > paddleSpeedNormal) {
+                    paddleSpeed = requiredSpeed;
+                    paddleBoostActive = true;
+                } else {
+                    paddleSpeed = paddleSpeedNormal;
+                    paddleBoostActive = false;
+                }
+                // Store target for checking when we've reached it
+                window.paddleTargetX = landingX;
+            } 
+            // Continue aggressive tracking while ball is below green line
+            else if (lowestBrickY !== null && ballCrossedGreenLine && dy > 0) {
+                let landingX = predictBallLandingX();
+                let framesToLand = (canvas.height - paddleHeight - y) / Math.abs(dy);
+                let requiredSpeed = calculateRequiredPaddleSpeed(landingX, framesToLand);
+                // Check if we've reached the target area
+                const currentPaddleCenter = paddleX + paddleWidth / 2;
+                const targetCenter = landingX + paddleWidth / 2;
+                const distanceToTarget = Math.abs(targetCenter - currentPaddleCenter);
+                // If we're close to target (within paddle width), return to normal
+                if (distanceToTarget <= paddleWidth && framesToLand > 4) {
+                    paddleSpeed = paddleSpeedNormal;
+                    paddleBoostActive = false;
+                } else {
+                    // Only boost if required speed is greater than normal
+                    if (requiredSpeed > paddleSpeedNormal) {
+                        paddleSpeed = requiredSpeed;
+                    } else {
+                        paddleSpeed = paddleSpeedNormal;
+                        paddleBoostActive = false;
+                    }
+                }
+                window.paddleTargetX = landingX;
+            } 
+            // Reset to normal speed when ball is going up or boost not needed
+            else {
+                paddleSpeed = paddleSpeedNormal;
+                paddleBoostActive = false;
+                ballCrossedGreenLine = false; // Reset for next descent
+                window.paddleTargetX = null;
+            }
+            if (dy < 0) {
+                // Random walk when ball is going up
+                if (paddleMode !== 'random') {
+                    paddleMode = 'random';
+                    randomMoveTimer = 0;
+                    randomMoveDuration = 0;
+                }
+                if (randomMoveTimer <= 0) {
+                    randomMoveDirection = Math.random() < 0.5 ? -1 : 1;
+                    randomMoveDistance = 20 + Math.random() * 40;
+                    randomMoveDuration = Math.abs(randomMoveDistance / paddleSpeed);
+                    randomMoveTimer = randomMoveDuration;
+                }
+                let target = paddleX + randomMoveDirection * paddleSpeed;
+                if (target < 0) target = 0;
+                if (target > canvas.width - paddleWidth) target = canvas.width - paddleWidth;
+                if (Math.abs(paddleX - target) > paddleSpeed) {
+                    paddleX += paddleSpeed * Math.sign(target - paddleX);
+                } else {
+                    paddleX = target;
+                    randomMoveTimer--;
+                }
+            } else {
+                // Ball is coming down - move directly to predicted landing spot
+                if (paddleMode !== 'track') {
+                    paddleMode = 'track';
+                    oscillatePhase = 0;
+                    oscillateOffset = 0;
+                    overshootDir = Math.random() < 0.5 ? -1 : 1;
+                    overshootUturn = false;
+                    lastLandingX = null;
+                }
+                let landingX = predictBallLandingX();
+                
+                // If paddle is boosted, move aggressively and directly to target
+                if (paddleBoostActive && window.paddleTargetX !== null) {
+                    let target = window.paddleTargetX;
+                    if (target < 0) target = 0;
+                    if (target > canvas.width - paddleWidth) target = canvas.width - paddleWidth;
+                    
+                    const distanceToTarget = Math.abs(paddleX - target);
+                    
+                    if (distanceToTarget > paddleSpeed) {
+                        // Move at full speed towards target
+                        paddleX += paddleSpeed * Math.sign(target - paddleX);
+                    } else {
+                        // Close to target, move precisely
+                        paddleX = target;
+                        // Check if we should return to normal speed
+                        const currentPaddleCenter = paddleX + paddleWidth / 2;
+                        const targetCenter = target + paddleWidth / 2;
+                        if (Math.abs(targetCenter - currentPaddleCenter) <= 3) {
+                            // We've reached the target precisely
+                            paddleSpeed = paddleSpeedNormal;
+                            paddleBoostActive = false;
+                        }
+                    }
+                } else {
+                    // Normal mode: slight oscillation around predicted landing
+                    let minX = Math.max(0, landingX - paddleWidth / 2);
+                    let maxX = Math.min(canvas.width - paddleWidth, landingX + paddleWidth / 2);
+                    oscillatePhase += paddleSpeed / 20;
+                    let osc = Math.sin(oscillatePhase) * (paddleWidth / 4); // Reduced oscillation
+                    let target = landingX + osc;
+                    if (target < minX) target = minX;
+                    if (target > maxX) target = maxX;
+                    if (Math.abs(paddleX - target) > paddleSpeed) {
+                        paddleX += paddleSpeed * Math.sign(target - paddleX);
+                    } else {
+                        paddleX = target;
+                    }
+                }
+            }
+        }
+
+        function deflectBall() {
+            let currentAngle = Math.atan2(dy, dx);
+            let deflect = (Math.random() - 0.5) * (Math.PI / 6);
+            let newAngle = currentAngle + deflect;
+            let newSpeed = Math.sqrt(dx * dx + dy * dy);
+            dx = newSpeed * Math.cos(newAngle);
+            dy = newSpeed * Math.sin(newAngle);
+        }
+
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            drawBricks();
+            // Draw green line below last brick row
+            const lowestBrickY = getLowestBrickY();
+            if (lowestBrickY !== null) {
+                ctx.save();
+                ctx.strokeStyle = 'rgba(0, 0, 0, 0)';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.moveTo(0, lowestBrickY + 2); // +2 for just below the brick
+                ctx.lineTo(canvas.width, lowestBrickY + 2);
+                ctx.stroke();
+                ctx.restore();
+            }
+            drawBall();
+            drawPaddle();
+            updateAndDrawParticles();
+            collisionDetection();
+
+            let deflectNext = false;
+
+            // Ball-wall collision
+            if (x + dx > canvas.width - ballRadius || x + dx < ballRadius) {
+                dx = -dx;
+                nonBrickHitCount++;
+                consecutiveNoTargetBounces++;
+                // Only apply +0.1 effect if not already active
+                scheduleSpeedReset(0.1);
+                if (nonBrickHitCount >= 5 || consecutiveNoTargetBounces >= 4) deflectNext = true;
+            }
+            if (y + dy < ballRadius) {
+                dy = -dy;
+                nonBrickHitCount++;
+                consecutiveNoTargetBounces++;
+                // Only apply +0.1 effect if not already active
+                scheduleSpeedReset(0.1);
+                if (nonBrickHitCount >= 5 || consecutiveNoTargetBounces >= 4) deflectNext = true;
+            }
+
+            // Ball-paddle collision
+            if (y + dy > canvas.height - ballRadius - paddleHeight &&
+                x > paddleX && x < paddleX + paddleWidth) {
+                // Minimal sparkle effect on paddle hit
+                spawnParticles(
+                    x,
+                    canvas.height - paddleHeight,
+                    '#0d0d19', // match paddle color
+                    4 + Math.floor(Math.random() * 2), // 4-5 particles (reduced)
+                    0.9, 1.3, 0.8, 1.5, 8, 14, true
+                );
+                // Reset paddle speed after hit
+                paddleSpeed = paddleSpeedNormal;
+                paddleBoostActive = false;
+                let hit = (x - (paddleX + paddleWidth / 2)) / (paddleWidth / 2);
+                let bounceAngle = hit * (Math.PI / 3);
+                // preserve direction
+                const prevDxSign = Math.sign(dx);
+                const prevDySign = Math.sign(dy);
+                dx = speed * Math.sin(bounceAngle) * prevDxSign;
+                dy = -Math.abs(speed * Math.cos(bounceAngle)) * prevDySign;
+                // Add a small random angle to the bounce
+                let angleJitter = (Math.random() - 0.5) * (Math.PI / 24); // ±7.5deg
+                let newAngle = Math.atan2(dy, dx) + angleJitter;
+                let newSpeed = Math.sqrt(dx * dx + dy * dy);
+                dx = newSpeed * Math.cos(newAngle) * prevDxSign;
+                dy = newSpeed * Math.sin(newAngle) * prevDySign;
+                // Only apply +0.1 effect if not already active
+                scheduleSpeedReset(0.1);
+                nonBrickHitCount++;
+                consecutiveNoTargetBounces++;
+                if (nonBrickHitCount >= 5 || consecutiveNoTargetBounces >= 4) deflectNext = true;
+                paddleMode = 'random';
+            }
+
+            // Deflect if stuck
+            if (deflectNext) {
+                deflectBall();
+                nonBrickHitCount = 0;
+                consecutiveNoTargetBounces = 0;
+            }
+
+            // Ball falls below paddle
+            if (y + dy > canvas.height - ballRadius) {
+                if (isFirstFall) {
+                    // Treat as a try: move paddle to where ball landed, activate manual mode, don't reset game
+                    isFirstFall = false;
+                    // Move paddle to ball's x, center paddle on ball
+                    paddleX = Math.max(0, Math.min(canvas.width - originalPaddleWidth * 2, x - originalPaddleWidth));
+                    paddleWidth = originalPaddleWidth * 2;
+                    manualMode = true;
+                    manualPaddleTargetX = paddleX;
+                    // Place ball above paddle
+                    x = Math.max(paddleX + paddleWidth / 2, Math.min(canvas.width - ballRadius, x));
+                    y = canvas.height - 30;
+                    speed = 6;
+                    angle = Math.PI * (0.25 + 0.5 * Math.random());
+                    dx = speed * Math.cos(angle);
+                    dy = -speed * Math.sin(angle);
+                    if (speedResetTimeout) clearTimeout(speedResetTimeout);
+                    lastBallAboveBricks = true;
+                    ballCrossedGreenLine = false;
+                    window.paddleTargetX = null;
+                    paddleMode = 'random';
+                    nonBrickHitCount = 0;
+                    consecutiveNoTargetBounces = 0;
+                    // Do NOT reset bricks or manual mode
+                } else {
+                    // Normal reset after first fall
+                    x = canvas.width / 2;
+                    y = canvas.height - 30;
+                    speed = 6;
+                    angle = Math.PI * (0.25 + 0.5 * Math.random());
+                    dx = speed * Math.cos(angle);
+                    dy = -speed * Math.sin(angle);
+                    if (speedResetTimeout) clearTimeout(speedResetTimeout);
+                    // Reset ball crossing detector state on ball reset
+                    lastBallAboveBricks = true;
+                    ballCrossedGreenLine = false;
+                    window.paddleTargetX = null;
+                    deactivateManualMode();
+                    paddleX = (canvas.width - originalPaddleWidth) / 2;
+                    paddleMode = 'random';
+                    nonBrickHitCount = 0;
+                    consecutiveNoTargetBounces = 0;
+                    resetBricks(); // Reset bricks on ball loss
+                    isFirstFall = true;
+                }
+            }
+
+            x += dx;
+            y += dy;
+
+            updatePaddle();
+
+            requestAnimationFrame(draw);
+        }
+
+        draw();
+    </script>
+</body>
+</html>

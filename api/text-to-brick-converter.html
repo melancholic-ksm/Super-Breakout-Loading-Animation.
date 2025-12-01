@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Super Breakout - Text to Brick Art Converter</title>
+  <meta name="description" content="Convert any text to ASCII brick art for Super Breakout Loading Animation" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    /* ========================================
+     * STYLES - Text to Brick Art Converter
+     * Converts text input to underscore-based ASCII art
+     * for use in Super Breakout Loading Animation
+     * ======================================== */
+
+    body {
+      margin: 0;
+      background: #f3f3eb;
+      color: #0d0d19;
+      font: 14px/1.45 system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+    }
+
+    .wrap {
+      max-width: 980px;
+      margin: 24px auto;
+      padding: 0 16px;
+    }
+
+    h1 {
+      font: 600 18px/1.2 system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      margin: 0 0 12px;
+    }
+
+    .row {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 16px;
+    }
+
+    .controls {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    input[type="text"] {
+      padding: 8px 10px;
+      border: 1px solid #bbb;
+      border-radius: 6px;
+      width: 360px;
+      background: #fff;
+    }
+
+    .btn {
+      padding: 8px 12px;
+      border: 1px solid #0d0d19;
+      border-radius: 6px;
+      background: #0d0d19;
+      color: #fff;
+      cursor: pointer;
+      transition: background 0.2s, transform 0.1s;
+    }
+
+    .btn:hover {
+      background: #2a2a3a;
+    }
+
+    .btn:active {
+      transform: scale(0.98);
+    }
+
+    .btn.secondary {
+      background: #fff;
+      color: #0d0d19;
+    }
+
+    .btn.secondary:hover {
+      background: #e8e8e0;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+
+    @media (max-width: 768px) {
+      .grid {
+        grid-template-columns: 1fr;
+      }
+
+      input[type="text"] {
+        width: 100%;
+      }
+    }
+
+    .panel {
+      background: #fff;
+      border: 1px solid #e1e1da;
+      border-radius: 8px;
+      padding: 12px;
+    }
+
+    .panel h2 {
+      margin: 0 0 8px;
+      font: 600 14px/1.2 system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+    }
+
+    pre,
+    textarea {
+      width: 100%;
+      box-sizing: border-box;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      background: #fff;
+      padding: 12px;
+    }
+
+    pre {
+      margin: 0;
+      white-space: pre;
+      overflow: auto;
+      font: 13px/1.05 Menlo, Consolas, "Liberation Mono", Monaco, "Courier New", monospace;
+    }
+
+    textarea {
+      height: 260px;
+      resize: vertical;
+      font: 12px/1.15 Menlo, Consolas, "Liberation Mono", Monaco, "Courier New", monospace;
+    }
+
+    .note {
+      color: #555;
+      font-size: 12px;
+    }
+
+    .instructions {
+      background: #fff;
+      border: 1px solid #e1e1da;
+      border-radius: 8px;
+      padding: 16px;
+      margin-top: 16px;
+    }
+
+    .instructions h3 {
+      margin: 0 0 8px;
+      font: 600 14px/1.2 system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+    }
+
+    .instructions ol {
+      margin: 0;
+      padding-left: 20px;
+    }
+
+    .instructions li {
+      margin-bottom: 8px;
+    }
+
+    .instructions code {
+      background: #f0f0e8;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-family: Menlo, Consolas, monospace;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>Super Breakout - Text to Brick Art Converter</h1>
+    <div class="row">
+      <!-- Input Controls -->
+      <div class="controls">
+        <input
+          id="textInput"
+          type="text"
+          value="LOADING"
+          placeholder="Enter text to render (A–Z, 0–9, symbols)"
+          aria-label="Text input for brick art conversion"
+        />
+        <button id="renderBtn" class="btn">Render</button>
+        <button id="copyAsciiBtn" class="btn secondary">Copy ASCII</button>
+        <button id="copyArrayBtn" class="btn secondary">Copy JS Array</button>
+        <span class="note">Monospaced preview for consistent alignment</span>
+      </div>
+
+      <!-- Output Panels -->
+      <div class="grid">
+        <div class="panel">
+          <h2>Preview (ASCII)</h2>
+          <pre id="preview" aria-label="ASCII preview output"></pre>
+        </div>
+        <div class="panel">
+          <h2>JS Array (BRICK_ART style)</h2>
+          <textarea
+            id="arrayOut"
+            spellcheck="false"
+            aria-label="JavaScript array output"
+          ></textarea>
+        </div>
+      </div>
+
+      <!-- Instructions Panel -->
+      <div class="instructions">
+        <h3>How to Use</h3>
+        <ol>
+          <li>Enter your custom text in the input field above (supports A-Z, 0-9, and common symbols)</li>
+          <li>Click <strong>Render</strong> to generate the brick art pattern</li>
+          <li>Click <strong>Copy JS Array</strong> to copy the generated code</li>
+          <li>Replace the <code>BRICK_ART</code> array in your chosen animation file with the copied code</li>
+          <li>Enjoy your custom loading animation!</li>
+        </ol>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    /**
+     * ========================================
+     * TEXT TO BRICK ART CONVERTER
+     * ========================================
+     *
+     * This script converts text input into underscore-based ASCII art
+     * suitable for use as brick patterns in Super Breakout Loading Animation.
+     *
+     * Supported characters: A-Z, 0-9, and common symbols
+     *
+     * @author Super Breakout Loading Animation
+     * @version 1.0.0
+     */
+
+    /**
+     * GLYPH DEFINITIONS
+     * -----------------
+     * Each character is defined as a 5x7 grid where:
+     * - '1' represents a filled pixel (renders as underscore)
+     * - '0' represents an empty pixel (renders as space)
+     *
+     * The 7 rows represent the vertical layout of each character.
+     */
+    const GLYPHS = {
+      // Space character
+      ' ': ["00000", "00000", "00000", "00000", "00000", "00000", "00000"],
+
+      // Letters A-Z
+      'A': ["01110", "10001", "10001", "11111", "10001", "10001", "10001"],
+      'B': ["11110", "10001", "10001", "11110", "10001", "10001", "11110"],
+      'C': ["01110", "10001", "10000", "10000", "10000", "10001", "01110"],
+      'D': ["11110", "10001", "10001", "10001", "10001", "10001", "11110"],
+      'E': ["11111", "10000", "10000", "11111", "10000", "10000", "11111"],
+      'F': ["11111", "10000", "10000", "11111", "10000", "10000", "10000"],
+      'G': ["01110", "10001", "10000", "10111", "10001", "10001", "01110"],
+      'H': ["10001", "10001", "10001", "11111", "10001", "10001", "10001"],
+      'I': ["01110", "00100", "00100", "00100", "00100", "00100", "01110"],
+      'J': ["00011", "00001", "00001", "00001", "10001", "10001", "11110"],
+      'K': ["10001", "10010", "10100", "11000", "10100", "10010", "10001"],
+      'L': ["10000", "10000", "10000", "10000", "10000", "10000", "11111"],
+      'M': ["10001", "11011", "10101", "10001", "10001", "10001", "10001"],
+      'N': ["10001", "11001", "10101", "10011", "10001", "10001", "10001"],
+      'O': ["01110", "10001", "10001", "10001", "10001", "10001", "01110"],
+      'P': ["11110", "10001", "10001", "11110", "10000", "10000", "10000"],
+      'Q': ["01110", "10001", "10001", "10001", "10101", "10010", "01101"],
+      'R': ["11110", "10001", "10001", "11110", "10100", "10010", "10001"],
+      'S': ["01111", "10000", "10000", "01110", "00001", "00001", "11110"],
+      'T': ["11111", "00100", "00100", "00100", "00100", "00100", "00100"],
+      'U': ["10001", "10001", "10001", "10001", "10001", "10001", "11111"],
+      'V': ["10001", "10001", "10001", "10001", "01010", "01010", "00100"],
+      'W': ["10001", "10001", "10001", "10101", "10101", "11011", "10001"],
+      'X': ["10001", "01010", "00100", "00100", "00100", "01010", "10001"],
+      'Y': ["10001", "01010", "00100", "00100", "00100", "00100", "00100"],
+      'Z': ["11111", "00010", "00100", "00100", "01000", "10000", "11111"],
+
+      // Numbers 0-9
+      '0': ["01110", "10001", "10011", "10101", "11001", "10001", "01110"],
+      '1': ["00100", "01100", "00100", "00100", "00100", "00100", "01110"],
+      '2': ["01110", "10001", "00001", "00110", "01000", "10000", "11111"],
+      '3': ["11110", "00001", "00001", "01110", "00001", "00001", "11110"],
+      '4': ["00010", "00110", "01010", "10010", "11111", "00010", "00010"],
+      '5': ["11111", "10000", "10000", "11110", "00001", "00001", "11110"],
+      '6': ["01110", "10000", "10000", "11110", "10001", "10001", "01110"],
+      '7': ["11111", "00001", "00010", "00100", "01000", "10000", "10000"],
+      '8': ["01110", "10001", "10001", "01110", "10001", "10001", "01110"],
+      '9': ["01110", "10001", "10001", "01111", "00001", "00001", "01110"],
+
+      // Common Symbols
+      '!': ["00100", "00100", "00100", "00100", "00100", "00000", "00100"],
+      '@': ["11111", "10001", "10111", "10101", "10111", "10000", "11111"],
+      '#': ["01010", "11111", "01010", "11111", "01010", "11111", "01010"],
+      '$': ["00100", "11111", "10100", "01110", "00101", "11111", "00100"],
+      '%': ["11000", "11001", "00010", "00100", "01000", "10011", "00011"],
+      '^': ["00100", "01010", "10001", "00000", "00000", "00000", "00000"],
+      '&': ["01100", "10010", "10100", "01000", "10101", "10010", "01101"],
+      '*': ["00000", "01010", "00100", "11111", "00100", "01010", "00000"],
+      '(': ["00010", "00100", "01000", "01000", "01000", "00100", "00010"],
+      ')': ["01000", "00100", "00010", "00010", "00010", "00100", "01000"],
+      '_': ["00000", "00000", "00000", "00000", "00000", "00000", "11111"],
+      '-': ["00000", "00000", "00000", "11111", "00000", "00000", "00000"],
+      '+': ["00000", "00100", "00100", "11111", "00100", "00100", "00000"],
+      '=': ["00000", "11111", "00000", "11111", "00000", "00000", "00000"],
+      '{': ["00011", "00100", "00100", "11000", "00100", "00100", "00011"],
+      '}': ["11000", "00100", "00100", "00011", "00100", "00100", "11000"],
+      '[': ["11100", "10000", "10000", "10000", "10000", "10000", "11100"],
+      ']': ["00111", "00001", "00001", "00001", "00001", "00001", "00111"],
+      ':': ["00000", "00100", "00000", "00000", "00000", "00100", "00000"],
+      ';': ["00000", "00100", "00000", "00000", "00000", "00100", "01000"],
+      '"': ["01010", "01010", "00000", "00000", "00000", "00000", "00000"],
+      "'": ["00100", "00100", "00000", "00000", "00000", "00000", "00000"],
+      '<': ["00010", "00100", "01000", "10000", "01000", "00100", "00010"],
+      ',': ["00000", "00000", "00000", "00000", "00000", "00100", "01000"],
+      '>': ["01000", "00100", "00010", "00001", "00010", "00100", "01000"],
+      '.': ["00000", "00000", "00000", "00000", "00000", "00110", "00110"],
+      '?': ["11111", "10001", "00010", "00100", "00100", "00000", "00100"],
+      '/': ["00001", "00010", "00100", "01000", "10000", "00000", "00000"],
+      '₹': ["11110", "00001", "11100", "00100", "11100", "00100", "00100"],
+    };
+
+    /**
+     * Default glyph used for unsupported characters
+     * Displays a filled rectangle to indicate unknown character
+     */
+    const DEFAULT_GLYPH = ["11111", "10001", "10101", "10001", "10101", "10001", "11111"];
+
+    /**
+     * RENDERING CONFIGURATION
+     * -----------------------
+     * These constants control how the ASCII art is generated:
+     * - PAIR_WIDTH: Number of characters per "pixel" (2 = double-width for '__')
+     * - CHAR_SPACING: Number of spaces between letters
+     * - TARGET_ROWS: Final number of rows in output (default 12 for BRICK_ART)
+     */
+    const PAIR_WIDTH = 2;      // Each pixel becomes 2 characters
+    const CHAR_SPACING = 2.5;  // Space between letters
+    const TARGET_ROWS = 12;    // Output row count
+
+    /**
+     * Scales a single row of bits to the target width
+     * Converts '1' to underscores and '0' to spaces
+     *
+     * @param {string} bits - Binary string representing one row
+     * @param {number} sx - Scale factor for horizontal width
+     * @returns {string} Scaled row with underscores and spaces
+     */
+    function scaleBitsRow(bits, sx = PAIR_WIDTH) {
+      return bits
+        .split('')
+        .map(ch => (ch === '1' ? '_'.repeat(sx) : ' '.repeat(sx)))
+        .join('');
+    }
+
+    /**
+     * Expands 7-row glyph to target number of rows
+     * Uses linear interpolation to distribute rows evenly
+     *
+     * @param {string[]} rows7 - Array of 7 rows
+     * @param {number} target - Target number of output rows
+     * @returns {string[]} Expanded array of rows
+     */
+    function verticalExpand(rows7, target = TARGET_ROWS) {
+      const out = [];
+      const h = 7;
+      for (let r = 0; r < h; r++) {
+        const start = Math.floor((r * target) / h);
+        const end = Math.floor(((r + 1) * target) / h);
+        const reps = Math.max(1, end - start);
+        for (let k = 0; k < reps; k++) {
+          out.push(rows7[r]);
+        }
+      }
+      return out;
+    }
+
+    /**
+     * Main rendering function
+     * Converts text string to underscore-based ASCII art
+     *
+     * @param {string} text - Input text to convert
+     * @param {number} sx - Horizontal scale factor
+     * @param {number} spacing - Space between characters
+     * @param {number} rows - Target number of output rows
+     * @returns {string[]} Array of strings representing the ASCII art
+     */
+    function renderUnderscores(text, sx = PAIR_WIDTH, spacing = CHAR_SPACING, rows = TARGET_ROWS) {
+      // Convert lowercase to uppercase and get glyph keys
+      const keys = Array.from(text).map(ch =>
+        ch >= 'a' && ch <= 'z' ? ch.toUpperCase() : ch
+      );
+
+      // Get bitmap for each character
+      const bitmaps = keys.map(k => GLYPHS[k] || DEFAULT_GLYPH);
+
+      // Build the 7-row base pattern
+      const base7 = [];
+      for (let r = 0; r < 7; r++) {
+        const segs = bitmaps.map(bmp => scaleBitsRow(bmp[r], sx));
+        base7.push(segs.join(' '.repeat(spacing)));
+      }
+
+      // Expand to target rows
+      const lines = verticalExpand(base7, rows);
+
+      // Pad all lines to same width
+      const maxw = Math.max(...lines.map(s => s.length));
+      return lines.map(s => s.padEnd(maxw, ' '));
+    }
+
+    /**
+     * Converts array of lines to JavaScript array literal string
+     *
+     * @param {string[]} lines - Array of ASCII art lines
+     * @param {boolean} useBackticks - Use template literals (true) or quotes (false)
+     * @returns {string} JavaScript array literal as string
+     */
+    function toJsArrayLiteral(lines, useBackticks = true) {
+      const indent = '    ';
+      if (useBackticks) {
+        return (
+          '[\n' +
+          lines.map((ln, i) => `${indent}\`${ln}\`${i < lines.length - 1 ? ',' : ''}`).join('\n') +
+          '\n]'
+        );
+      } else {
+        // Escape special characters for quoted strings
+        const esc = s => s.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+        return (
+          '[\n' +
+          lines.map((ln, i) => `${indent}"${esc(ln)}"${i < lines.length - 1 ? ',' : ''}`).join('\n') +
+          '\n]'
+        );
+      }
+    }
+
+    // ========================================
+    // DOM ELEMENTS AND EVENT HANDLERS
+    // ========================================
+
+    const textInput = document.getElementById('textInput');
+    const renderBtn = document.getElementById('renderBtn');
+    const preview = document.getElementById('preview');
+    const arrayOut = document.getElementById('arrayOut');
+    const copyAsciiBtn = document.getElementById('copyAsciiBtn');
+    const copyArrayBtn = document.getElementById('copyArrayBtn');
+
+    /**
+     * Updates the preview and array output based on current input
+     */
+    function update() {
+      const text = (textInput.value || 'LOADING').toString();
+      const lines = renderUnderscores(text);
+      preview.textContent = lines.join('\n');
+      arrayOut.value = toJsArrayLiteral(lines, true);
+    }
+
+    /**
+     * Copies text to clipboard with fallback for older browsers
+     *
+     * @param {string} str - Text to copy
+     */
+    async function copyText(str) {
+      try {
+        await navigator.clipboard.writeText(str);
+        alert('Copied to clipboard!');
+      } catch {
+        // Fallback for browsers without clipboard API
+        const ta = document.createElement('textarea');
+        ta.value = str;
+        ta.style.position = 'fixed';
+        ta.style.top = '-1000px';
+        document.body.appendChild(ta);
+        ta.focus();
+        ta.select();
+        try {
+          document.execCommand('copy');
+          alert('Copied to clipboard!');
+        } finally {
+          document.body.removeChild(ta);
+        }
+      }
+    }
+
+    // Attach event listeners
+    renderBtn.addEventListener('click', update);
+    textInput.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') update();
+    });
+    copyAsciiBtn.addEventListener('click', () => copyText(preview.textContent));
+    copyArrayBtn.addEventListener('click', () => copyText(arrayOut.value));
+
+    // Initial render on page load
+    update();
+  </script>
+</body>
+</html>
