@@ -1,21 +1,31 @@
 <!DOCTYPE html>
-<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Super Breakout Loading Animation - A sleek, elegant loading animation inspired by the classic game">
     <title>Loading...</title>
     <link rel="icon" type="image/png" href="/7C.png">
     <style>
+        * {
+            box-sizing: border-box;
+        }
+
         body {
             margin: 0;
+            padding: 0;
             height: 100vh;
             display: flex;
             justify-content: center;
             align-items: center;
             background: #f3f3eb;
+            overflow: hidden;
         }
+
         canvas {
             background: #f3f3eb;
+            max-width: 100%;
+            height: auto;
         }
     </style>
 </head>
@@ -136,58 +146,60 @@
         }, { passive: false });
 
         // Brick settings
-    const brickWidth = Math.round((12 * 1.25 * 1.25) / 1.25); // scale down
-    const brickHeight = Math.round(((3 * 1.25) / 1.25) * 1.12); // increase height by 1.12x
-    const brickPadding = Math.round(3 / 1.25); // scale down
-    const brickOffsetTop = Math.round(16 / 1.25);
-    const brickOffsetLeft = Math.round(8 / 1.25);
+        const brickWidth = Math.round((12 * 1.25 * 1.25) / 1.25);
+        const brickHeight = Math.round(((3 * 1.25) / 1.25) * 1.12);
+        const brickPadding = Math.round(3 / 1.25);
+        const brickOffsetTop = Math.round(16 / 1.25);
+        const brickOffsetLeft = Math.round(8 / 1.25);
 
         // Ball settings
         let ballRadius = 5;
         let x = canvas.width / 2;
         let y = canvas.height - 30;
-    let speed = 6;
-    let angle = Math.PI * (0.25 + 0.5 * Math.random());
-    let dx = speed * Math.cos(angle);
-    let dy = -speed * Math.sin(angle);
-    let speedResetTimeout = null;
-    let speedEffect = 0; // 0: none, 0.1: +0.1, -0.1: -0.1
-    function scheduleSpeedReset(newEffect) {
-        // Only apply if effect is different
-        if (speedEffect !== newEffect) {
-            speedEffect = newEffect;
-            speed = 6 + speedEffect;
-            // Recalculate dx/dy to preserve direction
-            let angleNow = Math.atan2(dy, dx);
-            const prevDxSign = Math.sign(dx) || 1;
-            const prevDySign = Math.sign(dy) || -1;
-            dx = speed * Math.cos(angleNow) * prevDxSign;
-            dy = speed * Math.sin(angleNow) * prevDySign;
+        let speed = 6;
+        let angle = Math.PI * (0.25 + 0.5 * Math.random());
+        let dx = speed * Math.cos(angle);
+        let dy = -speed * Math.sin(angle);
+        let speedResetTimeout = null;
+        let speedEffect = 0;
+
+        /**
+         * Schedules a speed effect reset after a random delay
+         * @param {number} newEffect - The speed modifier to apply (-0.1 or 0.1)
+         */
+        function scheduleSpeedReset(newEffect) {
+            if (speedEffect !== newEffect) {
+                speedEffect = newEffect;
+                speed = 6 + speedEffect;
+                let angleNow = Math.atan2(dy, dx);
+                const prevDxSign = Math.sign(dx) || 1;
+                const prevDySign = Math.sign(dy) || -1;
+                dx = speed * Math.cos(angleNow) * prevDxSign;
+                dy = speed * Math.sin(angleNow) * prevDySign;
+            }
+            if (speedResetTimeout) clearTimeout(speedResetTimeout);
+            const delay = 1000 + Math.random() * 3000;
+            speedResetTimeout = setTimeout(() => {
+                speedEffect = 0;
+                speed = 6;
+                let angleNow = Math.atan2(dy, dx);
+                const prevDxSign = Math.sign(dx) || 1;
+                const prevDySign = Math.sign(dy) || -1;
+                dx = speed * Math.cos(angleNow) * prevDxSign;
+                dy = speed * Math.sin(angleNow) * prevDySign;
+            }, delay);
         }
-        // Always reset timer
-        if (speedResetTimeout) clearTimeout(speedResetTimeout);
-        const delay = 1000 + Math.random() * 3000; // 1-4 seconds
-        speedResetTimeout = setTimeout(() => {
-            speedEffect = 0;
-            speed = 6;
-            let angleNow = Math.atan2(dy, dx);
-            const prevDxSign = Math.sign(dx) || 1;
-            const prevDySign = Math.sign(dy) || -1;
-            dx = speed * Math.cos(angleNow) * prevDxSign;
-            dy = speed * Math.sin(angleNow) * prevDySign;
-        }, delay);
-    }
 
         // Paddle settings
-    const paddleHeight = 8;
-    let paddleWidth = 40;
-    const originalPaddleWidth = 40;
-    let paddleX = (canvas.width - paddleWidth) / 2;
-    let paddleSpeed = 5.6;
-    const paddleSpeedNormal = 5.6;
-    const paddleSpeedBoost = 13; // Boosted speed
-    let paddleBoostActive = false;
-        let paddleMode = 'random'; // 'random' or 'track'
+        const paddleHeight = 8;
+        let paddleWidth = 40;
+        const originalPaddleWidth = 40;
+        let paddleX = (canvas.width - paddleWidth) / 2;
+        let paddleSpeed = 5.6;
+        const paddleSpeedNormal = 5.6;
+        const paddleSpeedBoost = 13;
+        let paddleBoostActive = false;
+        let paddleMode = 'random';
         let randomMoveTimer = 0;
         let randomMoveDuration = 0;
         let randomMoveDirection = 1;
@@ -198,32 +210,31 @@
         let overshootDir = 1;
         let overshootUturn = false;
         let lastLandingX = null;
-    let manualMode = false; // New: manual control mode
-    let mouseX = 0; // Track mouse position
-    let manualPaddleTargetX = null; // For smooth animation
-    let isFirstFall = true;
+        let manualMode = false;
+        let mouseX = 0;
+        let manualPaddleTargetX = null;
+        let isFirstFall = true;
 
         // Anti-stuck logic
         let nonBrickHitCount = 0;
         let consecutiveNoTargetBounces = 0;
         let lastHitWasBrick = false;
 
-        // Bricks array
-        // Use ASCII art to define the brick pattern
-    const BRICK_ART = [
-    `__              ______        ______      ________        ______      __      __      ________`,
-    `__            __      __    __      __    __      __        __        ____    __    __        `,
-    `__            __      __    __      __    __      __        __        ____    __    __        `,
-    `__            __      __    __      __    __      __        __        __  __  __    __        `,
-    `__            __      __    __      __    __      __        __        __  __  __    __        `,
-    `__            __      __    __________    __      __        __        __    ____    __  ______`,
-    `__            __      __    __      __    __      __        __        __      __    __      __`,
-    `__            __      __    __      __    __      __        __        __      __    __      __`,
-    `__            __      __    __      __    __      __        __        __      __    __      __`,
-    `__            __      __    __      __    __      __        __        __      __    __      __`,
-    `__________      ______      __      __    ________        ______      __      __      ________`,
-    `__________      ______      __      __    ________        ______      __      __      ________`,
-];
+        // ASCII art pattern for "LOADING" text bricks
+        const BRICK_ART = [
+            `__              ______        ______      ________        ______      __      __      ________`,
+            `__            __      __    __      __    __      __        __        ____    __    __        `,
+            `__            __      __    __      __    __      __        __        ____    __    __        `,
+            `__            __      __    __      __    __      __        __        __  __  __    __        `,
+            `__            __      __    __      __    __      __        __        __  __  __    __        `,
+            `__            __      __    __________    __      __        __        __    ____    __  ______`,
+            `__            __      __    __      __    __      __        __        __      __    __      __`,
+            `__            __      __    __      __    __      __        __        __      __    __      __`,
+            `__            __      __    __      __    __      __        __        __      __    __      __`,
+            `__            __      __    __      __    __      __        __        __      __    __      __`,
+            `__________      ______      __      __    ________        ______      __      __      ________`,
+            `__________      ______      __      __    ________        ______      __      __      ________`,
+        ];
 
         // Parse ASCII art in steps of 2 chars per column
         const brickRowCountArt = BRICK_ART.length;
