@@ -170,7 +170,9 @@ Super-Breakout-Loading-Animation/
 
 Use the interactive web tool to generate custom brick patterns:
 
-1. Open [`api/text-to-brick-converter.html`](api/text-to-brick-converter.html) in your browser
+🌐 **Live Demo:** [https://melancholic-ksm.github.io/super-breakout-loading-animation./api/](https://melancholic-ksm.github.io/super-breakout-loading-animation./api/)
+
+1. Open the [Text-to-Brick Converter](https://melancholic-ksm.github.io/super-breakout-loading-animation./api/text-to-brick-converter.html) in your browser
 2. Enter your custom text (e.g., "HELLO WORLD")
 3. Click **Render** to preview
 4. Click **Copy JS Array** to copy the generated code
@@ -187,8 +189,11 @@ Use the interactive web tool to generate custom brick patterns:
 
 Use the JavaScript API for dynamic text conversion:
 
+🔗 **API URL:** `https://melancholic-ksm.github.io/super-breakout-loading-animation./api/brick-art-converter.js`
+
 ```javascript
-import { BrickArtConverter } from './api/brick-art-converter.js';
+// Import from the live API
+import { BrickArtConverter } from 'https://melancholic-ksm.github.io/super-breakout-loading-animation./api/brick-art-converter.js';
 
 // Create converter
 const converter = new BrickArtConverter();
@@ -204,7 +209,7 @@ console.log(jsArray);
 **Quick Functions:**
 
 ```javascript
-import { quickConvert, quickConvertToJs } from './api/brick-art-converter.js';
+import { quickConvert, quickConvertToJs } from 'https://melancholic-ksm.github.io/super-breakout-loading-animation./api/brick-art-converter.js';
 
 // One-liner conversion
 const art = quickConvert('HELLO');
@@ -294,7 +299,8 @@ For complete API documentation, see [`docs/API.md`](docs/API.md).
 
 ```html
 <script type="module">
-import { BrickArtConverter } from './api/brick-art-converter.js';
+// Import from the live API
+import { BrickArtConverter } from 'https://melancholic-ksm.github.io/super-breakout-loading-animation./api/brick-art-converter.js';
 
 const converter = new BrickArtConverter();
 const BRICK_ART = converter.convert('WELCOME');

@@ -4,6 +4,8 @@
 
 The Super Breakout Loading Animation provides a powerful API for converting text to brick art patterns. This document covers all available methods and configuration options.
 
+🌐 **Live API:** [https://melancholic-ksm.github.io/super-breakout-loading-animation./api/](https://melancholic-ksm.github.io/super-breakout-loading-animation./api/)
+
 ---
 
 ## Table of Contents
@@ -23,8 +25,8 @@ The Super Breakout Loading Animation provides a powerful API for converting text
 ## Quick Start
 
 ```javascript
-// Import the converter
-import { BrickArtConverter } from './api/brick-art-converter.js';
+// Import from the live API
+import { BrickArtConverter } from 'https://melancholic-ksm.github.io/super-breakout-loading-animation./api/brick-art-converter.js';
 
 // Create a converter instance
 const converter = new BrickArtConverter();
@@ -41,7 +43,19 @@ console.log(jsArray);
 
 ## Installation
 
-### Browser (ES6 Modules)
+### Browser (ES6 Modules) - Recommended
+
+```html
+<script type="module">
+  // Import from the live API
+  import { BrickArtConverter } from 'https://melancholic-ksm.github.io/super-breakout-loading-animation./api/brick-art-converter.js';
+  
+  const converter = new BrickArtConverter();
+  const art = converter.convert('LOADING');
+</script>
+```
+
+### Browser (Local Installation)
 
 ```html
 <script type="module">
@@ -55,7 +69,7 @@ console.log(jsArray);
 ### Browser (Global)
 
 ```html
-<script src="./api/brick-art-converter.js"></script>
+<script src="https://melancholic-ksm.github.io/super-breakout-loading-animation./api/brick-art-converter.js"></script>
 <script>
   const converter = new BrickArtConverter();
   const art = converter.convert('LOADING');
@@ -285,7 +299,7 @@ converter
 Factory function to create a BrickArtConverter instance.
 
 ```javascript
-import { createBrickArtConverter } from './api/brick-art-converter.js';
+import { createBrickArtConverter } from 'https://melancholic-ksm.github.io/super-breakout-loading-animation./api/brick-art-converter.js';
 
 const converter = createBrickArtConverter({ targetRows: 10 });
 ```
@@ -297,7 +311,7 @@ const converter = createBrickArtConverter({ targetRows: 10 });
 One-off conversion function without creating an instance.
 
 ```javascript
-import { quickConvert } from './api/brick-art-converter.js';
+import { quickConvert } from 'https://melancholic-ksm.github.io/super-breakout-loading-animation./api/brick-art-converter.js';
 
 const art = quickConvert('LOADING');
 ```
@@ -309,7 +323,7 @@ const art = quickConvert('LOADING');
 One-off conversion to JavaScript array literal.
 
 ```javascript
-import { quickConvertToJs } from './api/brick-art-converter.js';
+import { quickConvertToJs } from 'https://melancholic-ksm.github.io/super-breakout-loading-animation./api/brick-art-converter.js';
 
 const jsArray = quickConvertToJs('LOADING');
 console.log(jsArray);
@@ -378,7 +392,7 @@ Row 7: 0 0 0 0 0  →  "00000"
 ### Basic Usage
 
 ```javascript
-import { BrickArtConverter } from './api/brick-art-converter.js';
+import { BrickArtConverter } from 'https://melancholic-ksm.github.io/super-breakout-loading-animation./api/brick-art-converter.js';
 
 const converter = new BrickArtConverter();
 
@@ -390,7 +404,7 @@ console.log(art.join('\n'));
 ### Integration with Animation
 
 ```javascript
-import { BrickArtConverter } from './api/brick-art-converter.js';
+import { BrickArtConverter } from 'https://melancholic-ksm.github.io/super-breakout-loading-animation./api/brick-art-converter.js';
 
 const converter = new BrickArtConverter();
 
@@ -415,7 +429,7 @@ for (let r = 0; r < brickRowCountArt; r++) {
 ### Dynamic Text Update
 
 ```javascript
-import { BrickArtConverter } from './api/brick-art-converter.js';
+import { BrickArtConverter } from 'https://melancholic-ksm.github.io/super-breakout-loading-animation./api/brick-art-converter.js';
 
 const converter = new BrickArtConverter();
 
